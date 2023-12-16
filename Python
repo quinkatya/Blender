@@ -1,0 +1,91 @@
+# https://www.youtube.com/watch?v=kC6EkZV6D18
+
+import bpy
+import random
+
+# Delete all objects
+bpy.ops.object.select_all(action='SELECT')
+bpy.ops.object.delete()
+
+# Delete all materials
+for m in bpy.data.materials:
+    bpy.data.materials.remove(m)
+
+# Create a new material
+bpy.data.materials.new(name="myMaterial")
+# Set the color of the material
+bpy.data.materials['myMaterial'].diffuse_color = (1, 0.5, 0.5, 1)
+bpy.data.materials['myMaterial'].metallic = 0.5
+
+# Make 5 cubes and spheres alternatively in a row
+objects = []
+for i in range(5):
+    # Make cube or sphere based on the index
+    if i % 2 == 0:
+        # Make one cube
+        bpy.ops.mesh.primitive_cube_add(size=2, location=(i * 3, 0, 0), scale=(1, 1, 1))
+    else:
+        # Make one sphere
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=1, location=(i * 3, 0, 0), segments=32, ring_count=16)
+
+    # Give the object the material we just created
+    bpy.context.object.data.materials.append(bpy.data.materials["myMaterial"])
+    objects.append(bpy.context.object)
+
+# Set up background image
+bpy.ops.world.new()
+world = bpy.data.worlds['World']
+world.use_nodes = True
+bg_node = world.node_tree.nodes.new(type='ShaderNodeTexEnvironment')
+bg_node.image = bpy.data.images.load("/Volumes/Backup Plus/AlreadyHere/COMS1002/Blender/shutterstock_1891521679.jpg")  # Replace with the path to your image
+bg_node.location = (0, 0)
+
+# Make a camera
+bpy.ops.object.camera_add(location=(5, 5, 15))
+cam = bpy.context.active_object
+
+# Set the camera to point at the cube (or sphere in this case)
+bpy.ops.object.constraint_add(type='TRACK_TO')
+bpy.context.object.constraints["Track To"].target = objects[0]
+
+# Make a light
+bpy.ops.object.light_add(type='AREA', radius=1, align='WORLD', location=(5, 0, 5), scale=(1, 1, 1))
+light = bpy.context.active_object
+
+# Turn up the power on the light
+bpy.context.object.data.energy = 100
+
+# Add keyframes for the camera
+cam.keyframe_insert("location", frame=1)
+cam.location.x = -12
+cam.location.z = 5
+cam.keyframe_insert("location", frame=50)
+cam.location.x = -3
+cam.location.z = 10
+cam.keyframe_insert("location", frame=100)
+cam.location.y = 0
+cam.location.z = 20
+cam.keyframe_insert("location", frame=200)
+
+
+# Add keyframes for the light
+light.keyframe_insert("location", frame=1)
+light.location.x = 2
+light.keyframe_insert("location", frame=250)
+
+# Add continuous movement keyframes for the objects
+for obj in objects:
+    obj.location.x += random.uniform(-5, 5)  # Initial random X-axis movement
+    obj.location.y += random.uniform(-10, 3)  # Initial random Y-axis movement
+    obj.location.z += random.uniform(-5, 8)  # Initial random Z-axis movement
+    obj.keyframe_insert("location", frame=1)
+
+    # Continuous random movement for the entire animation
+    for frame in range(2, 251):
+        obj.location.x += random.uniform(-0.1, 0.1)  # X-axis movement
+        obj.location.y += random.uniform(-0.1, 0.1)  # Y-axis movement
+        obj.location.z += random.uniform(-0.1, 0.1)  # Z-axis movement
+        obj.keyframe_insert("location", frame=frame)
+
+
+bpy.context.scene.frame_end = 251
